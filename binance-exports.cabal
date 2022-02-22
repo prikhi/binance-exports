@@ -31,6 +31,7 @@ library
   exposed-modules:
       Lib
       Lib.Main
+      Web.Binance
   other-modules:
       Paths_binance_exports
   hs-source-dirs:
@@ -46,8 +47,19 @@ library
       ViewPatterns
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -O2
   build-depends:
-      base >=4.7 && <5
+      aeson <3
+    , base >=4.7 && <5
+    , bytedump <2
+    , bytestring <1
+    , cassava <1
     , cmdargs >=0.10 && <1
+    , cryptohash-sha256 <1
+    , http-client <1
+    , mtl <3
+    , req <4
+    , scientific <1
+    , text <2
+    , time <2
   default-language: Haskell2010
 
 executable binance-exports

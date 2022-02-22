@@ -61,7 +61,18 @@ library:
     source-dirs:
         src
     dependencies:
+        - aeson < 3
+        - bytedump < 2
+        - bytestring < 1
+        - cassava < 1
         - cmdargs >= 0.10 && < 1
+        - cryptohash-sha256 < 1
+        - http-client < 1
+        - mtl < 3
+        - req < 4
+        - scientific < 1
+        - text < 2
+        - time < 2
 
 executables:
     binance-exports:
