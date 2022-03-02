@@ -37,6 +37,7 @@ import           Data.Proxy                     ( Proxy )
 import           Data.Scientific                ( FPFormat(..)
                                                 , Scientific
                                                 , formatScientific
+                                                , isInteger
                                                 )
 import           Data.Text.Encoding             ( encodeUtf8 )
 import           Data.Time                      ( UTCTime
@@ -174,6 +175,9 @@ instance FromJSON Trade where
         tIsBestMatch     <- o .: "isBestMatch"
         return Trade { .. }
 
+-- TODO: Fetch symbols from /api/v3/exchangeInfo?symbols=["BNBUSD","ETC"]
+-- Use base asset & quote asset columns to split the symbol column, use the
+-- xyzPrecision columns for formatting.
 instance ToNamedRecord Trade where
     toNamedRecord Trade {..} = namedRecord
         [ "time" .= formatTime defaultTimeLocale
@@ -183,12 +187,15 @@ instance ToNamedRecord Trade where
         , "type" .= if tIsBuyer then "BUY" else ("SELL" :: String)
         , "price" .= renderScientific tPrice
         , "quantity" .= renderScientific tQuantity
-        , "total" .= renderScientific tQuoteQuantity
+        , "total" .= formatScientific Fixed (Just 8) tQuoteQuantity
         , "fee" .= renderScientific tCommission
         , "fee-currency" .= tCommissionAsset
         , "trade-id" .= tId
         ]
-        where renderScientific = formatScientific Fixed Nothing
+      where
+        renderScientific p = if isInteger p
+            then formatScientific Fixed (Just 0) p
+            else formatScientific Fixed Nothing p
 
 instance DefaultOrdered Trade where
     headerOrder _ = Csv.header
