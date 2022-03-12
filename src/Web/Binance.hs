@@ -1,12 +1,18 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-| Request functions & response types for the Binance.US API
 -}
 module Web.Binance
     (
     -- * Config
       BinanceConfig(..)
+    , BinanceApiM
     , runApi
     -- * Requests
+    -- ** Exchange Info
+    , getExchangeInfo
+    , ExchangeInfo(..)
+    , SymbolDetails(..)
     -- ** Trade History
     , getTradeHistory
     , Trade(..)
@@ -26,19 +32,10 @@ import           Data.Aeson                     ( (.:)
                                                 , FromJSON(..)
                                                 , withObject
                                                 )
-import           Data.Csv                       ( (.=)
-                                                , DefaultOrdered(..)
-                                                , ToNamedRecord(..)
-                                                , namedRecord
-                                                )
 import           Data.Function                  ( on )
 import           Data.List                      ( minimumBy )
 import           Data.Proxy                     ( Proxy )
-import           Data.Scientific                ( FPFormat(..)
-                                                , Scientific
-                                                , formatScientific
-                                                , isInteger
-                                                )
+import           Data.Scientific                ( Scientific )
 import           Data.Text.Encoding             ( encodeUtf8 )
 import           Data.Time                      ( UTCTime
                                                 , getCurrentTime
@@ -61,7 +58,7 @@ import           Network.HTTP.Req               ( (/:)
                                                 , HttpBodyAllowed
                                                 , HttpMethod
                                                 , HttpResponse
-                                                , MonadHttp
+                                                , MonadHttp(..)
                                                 , NoReqBody(..)
                                                 , Option
                                                 , ProvidesBody
@@ -71,6 +68,7 @@ import           Network.HTTP.Req               ( (/:)
                                                 , header
                                                 , https
                                                 , jsonResponse
+                                                , req
                                                 , reqCb
                                                 , responseBody
                                                 , runReq
@@ -80,7 +78,6 @@ import           Text.Bytedump                  ( hexString )
 import qualified Data.ByteString               as BS
 import qualified Data.ByteString.Char8         as BC
 import qualified Data.ByteString.Lazy          as LBS
-import qualified Data.Csv                      as Csv
 import qualified Data.Text                     as T
 
 
@@ -94,8 +91,60 @@ data BinanceConfig = BinanceConfig
     deriving (Show, Read, Eq, Ord)
 
 -- | Run a series of API requests with the given Config.
-runApi :: BinanceConfig -> ReaderT BinanceConfig Req a -> IO a
+runApi :: BinanceConfig -> BinanceApiM a -> IO a
 runApi cfg = runReq defaultHttpConfig . flip runReaderT cfg
+
+type BinanceApiM = ReaderT BinanceConfig Req
+
+-- | Use 'MonadHttp' from the 'Req' instance.
+instance  MonadHttp BinanceApiM where
+    handleHttpException = lift . handleHttpException
+
+
+-- EXCHANGE INFO
+
+-- | Get Exchange Information for the Given Symbol. Right now, just returns
+-- the requested symbol information.
+getExchangeInfo :: MonadHttp m => [T.Text] -> m ExchangeInfo
+getExchangeInfo symbols = do
+    let symbolsParam =
+            mconcat
+                [ "["
+                , T.intercalate "," (map (\s -> "\"" <> s <> "\"") symbols)
+                , "]"
+                ]
+    resp <- req GET
+                (https "api.binance.us" /: "api" /: "v3" /: "exchangeInfo")
+                NoReqBody
+                jsonResponse
+                ("symbols" =: symbolsParam)
+    return $ responseBody resp
+
+newtype ExchangeInfo = ExchangeInfo
+    { eiSymbols :: [SymbolDetails]
+    } deriving (Show, Read, Eq, Ord)
+
+instance FromJSON ExchangeInfo where
+    parseJSON =
+        withObject "ExchangeInfo" $ \o -> ExchangeInfo <$> o .: "symbols"
+
+data SymbolDetails = SymbolDetails
+    { sdSymbol              :: T.Text
+    , sdBaseAsset           :: T.Text
+    , sdBaseAssetPrecision  :: Int
+    , sdQuoteAsset          :: T.Text
+    , sdQuoteAssetPrecision :: Int
+    }
+    deriving (Show, Read, Eq, Ord)
+
+instance FromJSON SymbolDetails where
+    parseJSON = withObject "SymbolDetails" $ \o -> do
+        sdSymbol              <- o .: "symbol"
+        sdBaseAsset           <- o .: "baseAsset"
+        sdBaseAssetPrecision  <- o .: "baseAssetPrecision"
+        sdQuoteAsset          <- o .: "quoteAsset"
+        sdQuoteAssetPrecision <- o .: "quoteAssetPrecision"
+        return SymbolDetails { .. }
 
 
 -- TRADE HISTORY
@@ -149,6 +198,10 @@ data Trade = Trade
     , tPrice           :: Scientific
     , tQuantity        :: Scientific
     , tQuoteQuantity   :: Scientific
+    -- ^ The total amount spent/received during the trade. Note that we do
+    -- not use this value in our exports, as Binance truncates it & loses
+    -- a fraction of the amount. You probably want to do @'tQuantity'
+    -- * 'tPrice'@ instead.
     , tCommission      :: Scientific
     , tCommissionAsset :: T.Text
     , tTime            :: POSIXTime
@@ -174,41 +227,6 @@ instance FromJSON Trade where
         tIsMaker         <- o .: "isMaker"
         tIsBestMatch     <- o .: "isBestMatch"
         return Trade { .. }
-
--- TODO: Fetch symbols from /api/v3/exchangeInfo?symbols=["BNBUSD","ETC"]
--- Use base asset & quote asset columns to split the symbol column, use the
--- xyzPrecision columns for formatting.
-instance ToNamedRecord Trade where
-    toNamedRecord Trade {..} = namedRecord
-        [ "time" .= formatTime defaultTimeLocale
-                               "%F %T"
-                               (posixSecondsToUTCTime tTime)
-        , "symbol" .= tSymbol
-        , "type" .= if tIsBuyer then "BUY" else ("SELL" :: String)
-        , "price" .= renderScientific tPrice
-        , "quantity" .= renderScientific tQuantity
-        , "total" .= formatScientific Fixed (Just 8) tQuoteQuantity
-        , "fee" .= renderScientific tCommission
-        , "fee-currency" .= tCommissionAsset
-        , "trade-id" .= tId
-        ]
-      where
-        renderScientific p = if isInteger p
-            then formatScientific Fixed (Just 0) p
-            else formatScientific Fixed Nothing p
-
-instance DefaultOrdered Trade where
-    headerOrder _ = Csv.header
-        [ "time"
-        , "symbol"
-        , "type"
-        , "price"
-        , "quantity"
-        , "total"
-        , "fee"
-        , "fee-currency"
-        , "trade-id"
-        ]
 
 
 -- UTILS

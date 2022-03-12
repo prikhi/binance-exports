@@ -12,6 +12,16 @@ stack run -- -k <API_KEY> -s <API_SECRET> <SYMBOL1> <SYMBOL2> etc
 stack run -- --help
 ```
 
+TODO:
+
+* Switch between Binance & Binance US APIs
+* CLI flag for outputting to file
+* Config file & env var overrides for CLI args
+* Rework module structure & improve package documentation
+* Better error handling & logging
+* Release v1, add package to hackage & stackage
+
+
 [get-stack]: https://docs.haskellstack.org/en/stable/README/
 
 
