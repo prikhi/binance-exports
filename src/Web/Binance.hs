@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-| Request functions & response types for the Binance.US API
 -}
 module Web.Binance
@@ -21,7 +22,9 @@ module Web.Binance
     , mkSignature
     ) where
 
-import           Control.Monad.Reader           ( ReaderT
+import           Control.Monad.Reader           ( MonadIO
+                                                , MonadReader
+                                                , ReaderT
                                                 , ask
                                                 , lift
                                                 , liftIO
@@ -92,13 +95,15 @@ data BinanceConfig = BinanceConfig
 
 -- | Run a series of API requests with the given Config.
 runApi :: BinanceConfig -> BinanceApiM a -> IO a
-runApi cfg = runReq defaultHttpConfig . flip runReaderT cfg
+runApi cfg = runReq defaultHttpConfig . flip runReaderT cfg . runBinanceApiM
 
-type BinanceApiM = ReaderT BinanceConfig Req
+newtype BinanceApiM a =  BinanceApiM
+    { runBinanceApiM :: ReaderT BinanceConfig Req a
+    } deriving (Functor, Applicative, Monad, MonadIO, MonadReader BinanceConfig)
 
 -- | Use 'MonadHttp' from the 'Req' instance.
 instance  MonadHttp BinanceApiM where
-    handleHttpException = lift . handleHttpException
+    handleHttpException = BinanceApiM . lift . handleHttpException
 
 
 -- EXCHANGE INFO
@@ -151,14 +156,14 @@ instance FromJSON SymbolDetails where
 
 -- | Get Trade History for the Given Symbol.
 getTradeHistory
-    :: MonadHttp m
+    :: (MonadHttp m, MonadReader BinanceConfig m)
     => T.Text
     -- ^ Full symbol/pair of trades to fetch, e.g. @BNBUSD@.
     -> Maybe UTCTime
     -- ^ Start of time range
     -> Maybe UTCTime
     -- ^ End of time range
-    -> ReaderT BinanceConfig m [Trade]
+    -> m [Trade]
 getTradeHistory symbol mbStart mbEnd = do
     cfg       <- ask
     timestamp <- utcToMs <$> liftIO getCurrentTime
@@ -239,16 +244,17 @@ runSignedRequest
        , HttpBody body
        , HttpResponse response
        , HttpBodyAllowed (AllowsBody method) (ProvidesBody body)
+       , MonadReader BinanceConfig m
        )
     => method
     -> Url scheme
     -> body
     -> Proxy response
     -> Option scheme
-    -> ReaderT BinanceConfig m response
+    -> m response
 runSignedRequest m u b p s = do
     cfg <- ask
-    lift . reqCb m u b p s $ \req_ -> do
+    reqCb m u b p s $ \req_ -> do
         let qs   = BS.drop 1 $ queryString req_
             body = getBodyBS $ requestBody req_
             sig  = mkSignature cfg qs body
