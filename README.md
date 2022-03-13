@@ -34,8 +34,8 @@ executable directly instead of through stack:
 $ stack install
 $ export PATH="${HOME}/.local/bin/:${PATH}"
 $ binance-exports -k <API_KEY> -s <API_SECRET> SOLUSD
-time,symbol,type,price,quantity,total,fee,fee-currency
-2022-03-01 21:20:44,SOLUSD,BUY,42.2424,0.42,42.90010000,0.0009001,BNB
+time,base-asset,quote-asset,type,price,quantity,total,fee,fee-currency,trade-id
+2022-03-01 21:20:44,SOL,USD,BUY,42.2424,0.42,42.90010000,0.0009001,BNB,9001
 ```
 
 
