@@ -26,23 +26,32 @@ extra-source-files:
 
 
 synopsis:
-    Export Your Binance Trade History to a CSV.
+    Generate CSV Exports o your Binance Trade History.
 
 description: |
+    @binance-exports@ is a CLI program that queries the Binance.us API for your
+    Trade History & exports all trades to a CSV file.
+
     Sometime during February 2022, Binance removed their @Trade History@ page,
     along with the ability to export your completed trades. The @Order History@
     export is still available, but the format is more difficult to parse.
 
-    This package contaings a replacement executable for the @Trade History@
+    This package contains a replacement executable for the @Trade History@
     export, generating CSVs with an almost-identical format. There are two
     differences: we split the trade symbol into two separate asset columns &
     include the trade ID.
+
+    You can install @binance-exports@ with Stack: @stack install --resolver
+    nightly binance-exports@. Then run the following to print out your trades
+    for a given symbol:
 
     @
     $ binance-exports -k \<API_KEY\> -s \<API_SECRET\> SOLUSD
     time,base-asset,quote-asset,type,price,quantity,total,fee,fee-currency,trade-id
     2022-03-01 21:20:44,SOL,USD,BUY,42.2424,0.42,42.90010000,0.0009001,BNB,9001
     @
+
+    See @binance-exports --help@ for additional options.
 
 
 ghc-options:
