@@ -30,7 +30,7 @@ description:    @binance-exports@ is a CLI program that queries the Binance.us A
                 @
                 .
                 See @binance-exports --help@ for additional options.
-category:       Web
+category:       Web, Finance, Console
 homepage:       https://github.com/prikhi/binance-exports#readme
 bug-reports:    https://github.com/prikhi/binance-exports/issues
 author:         Pavan Rikhi
