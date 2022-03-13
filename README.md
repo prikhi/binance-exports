@@ -23,7 +23,6 @@ TODO:
 
 * Switch between Binance & Binance US APIs
 * Config file & env var overrides for CLI args
-* Release v1, add package to hackage & stackage
 
 
 [get-stack]: https://docs.haskellstack.org/en/stable/README/
