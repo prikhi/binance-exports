@@ -1,6 +1,6 @@
 module Main where
 
-import           Lib.Main
+import           Console.Binance.Exports.Main
 
 
 main :: IO ()

@@ -29,8 +29,8 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
-      Lib.Main
+      Console.Binance.Exports.Csv
+      Console.Binance.Exports.Main
       Web.Binance
   other-modules:
       Paths_binance_exports

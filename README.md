@@ -17,7 +17,7 @@ TODO:
 * Switch between Binance & Binance US APIs
 * CLI flag for outputting to file
 * Config file & env var overrides for CLI args
-* Rework module structure & improve package documentation
+* Improve package documentation
 * Better error handling & logging
 * Release v1, add package to hackage & stackage
 

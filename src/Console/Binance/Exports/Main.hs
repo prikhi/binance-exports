@@ -3,7 +3,7 @@
 {- | CLI application harness.
 
 -}
-module Lib.Main
+module Console.Binance.Exports.Main
     ( run
     , getArgs
     , Args(..)
@@ -11,25 +11,9 @@ module Lib.Main
 
 import           Control.Monad                  ( forM_ )
 import           Control.Monad.IO.Class         ( liftIO )
-import           Data.Csv                       ( (.=)
-                                                , DefaultOrdered(..)
-                                                , ToNamedRecord(..)
-                                                , defaultEncodeOptions
-                                                , encUseCrLf
-                                                , encodeDefaultOrderedByNameWith
-                                                , header
-                                                , namedRecord
-                                                )
 import           Data.List                      ( sortOn )
 import           Data.Ord                       ( Down(..) )
-import           Data.Scientific                ( FPFormat(..)
-                                                , Scientific
-                                                , formatScientific
-                                                , isInteger
-                                                )
 import           Data.Time                      ( UTCTime(..)
-                                                , defaultTimeLocale
-                                                , formatTime
                                                 , toGregorian
                                                 )
 import           Data.Time.Clock.POSIX          ( posixSecondsToUTCTime )
@@ -50,6 +34,7 @@ import           System.Console.CmdArgs         ( (&=)
                                                 )
 import           System.IO                      ( stderr )
 
+import           Console.Binance.Exports.Csv
 import           Paths_binance_exports          ( version )
 import           Web.Binance
 
@@ -76,11 +61,9 @@ run Args {..} = do
                         <> inputSymbol
                 Just _ -> return ()
         rawExportData <- concat <$> mapM getTradesForSymbol symbolDetails
-        return . filterYear $ sortOn (Down . tTime . edTrade) rawExportData
+        return . filterYear $ sortOn (Down . tTime . tedTrade) rawExportData
     -- Print CSV to stdout
-    LBS.putStr $ encodeDefaultOrderedByNameWith
-        (defaultEncodeOptions { encUseCrLf = False })
-        results
+    LBS.putStr $ buildTradeExport results
   where
     -- | Build a config for the Binance API requests from the CLI
     -- arguments.
@@ -90,11 +73,11 @@ run Args {..} = do
                         }
     -- | Get all trades for the given symbol & convert them into the export
     -- format.
-    getTradesForSymbol :: SymbolDetails -> BinanceApiM [ExportData]
+    getTradesForSymbol :: SymbolDetails -> BinanceApiM [TradeExportData]
     getTradesForSymbol s =
-        map (ExportData s) <$> getTradeHistory (sdSymbol s) Nothing Nothing
+        map (TradeExportData s) <$> getTradeHistory (sdSymbol s) Nothing Nothing
     -- | Filter the trades if a 'year' argument has been passed.
-    filterYear :: [ExportData] -> [ExportData]
+    filterYear :: [TradeExportData] -> [TradeExportData]
     filterYear = case year of
         Nothing -> id
         Just y ->
@@ -104,59 +87,7 @@ run Args {..} = do
                 . utctDay
                 . posixSecondsToUTCTime
                 . tTime
-                . edTrade
-
-
--- CSV EXPORT
-
--- | We need both the 'SymbolDetails' & the 'Trade' to generate an export
--- line.
-data ExportData = ExportData
-    { edSymbol :: SymbolDetails
-    , edTrade  :: Trade
-    }
-    deriving (Show, Read, Eq, Ord)
-
--- | We match the format of the old @Trade History@ export as much as
--- possible, but use the asset precisions for the @price@ & @quantity@
--- fields & output the @trade-id@ as well.
-instance ToNamedRecord ExportData where
-    toNamedRecord (ExportData SymbolDetails {..} Trade {..}) = namedRecord
-        [ "time" .= formatTime defaultTimeLocale
-                               "%F %T"
-                               (posixSecondsToUTCTime tTime)
-        , "base-asset" .= sdBaseAsset
-        , "quote-asset" .= sdQuoteAsset
-        , "type" .= if tIsBuyer then "BUY" else ("SELL" :: String)
-        , "price" .= formatScientific Fixed (Just sdQuoteAssetPrecision) tPrice
-        , "quantity"
-            .= formatScientific Fixed (Just sdBaseAssetPrecision) tQuantity
-        , "total" .= renderScientific (tPrice * tQuantity)
-        , "fee" .= renderScientific tCommission
-        , "fee-currency" .= tCommissionAsset
-        , "trade-id" .= tId
-        ]
-      where
-        -- | Render as an integer if possible, otherwise render to the
-        -- minimum decimal precision needed.
-        renderScientific :: Scientific -> String
-        renderScientific p = if isInteger p
-            then formatScientific Fixed (Just 0) p
-            else formatScientific Fixed Nothing p
-
-instance DefaultOrdered ExportData where
-    headerOrder _ = header
-        [ "time"
-        , "base-asset"
-        , "quote-asset"
-        , "type"
-        , "price"
-        , "quantity"
-        , "total"
-        , "fee"
-        , "fee-currency"
-        , "trade-id"
-        ]
+                . tedTrade
 
 
 -- CLI ARGS
