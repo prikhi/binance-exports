@@ -22,7 +22,6 @@ stack run -- --help
 TODO:
 
 * Switch between Binance & Binance US APIs
-* CLI flag for outputting to file
 * Config file & env var overrides for CLI args
 * Release v1, add package to hackage & stackage
 

@@ -10,6 +10,7 @@ module Console.Binance.Exports.Main
 
 import           Control.Monad.IO.Class         ( liftIO )
 import           Data.List                      ( sortOn )
+import           Data.Maybe                     ( fromMaybe )
 import           Data.Ord                       ( Down(..) )
 import           Data.Time                      ( UTCTime(..)
                                                 , toGregorian
@@ -52,8 +53,12 @@ run Args {..} = do
             >>= handleBinanceError
         rawExportData <- concat <$> mapM getTradesForSymbol symbolDetails
         return . filterYear $ sortOn (Down . tTime . tedTrade) rawExportData
-    -- Print CSV to stdout
-    LBS.putStr $ buildTradeExport results
+    -- Write CSV to file or stdout
+    let outputFileOrStdout = fromMaybe "-" outputFile
+    let output             = buildTradeExport results
+    if outputFileOrStdout == "-"
+        then LBS.putStr output
+        else LBS.writeFile outputFileOrStdout output
   where
     -- | Build a config for the Binance API requests from the CLI
     -- arguments.
@@ -96,10 +101,11 @@ run Args {..} = do
 
 -- | CLI arguments supported by the executable.
 data Args = Args
-    { apiKey    :: String
-    , apiSecret :: String
-    , symbols   :: [String]
-    , year      :: Maybe Integer
+    { apiKey     :: String
+    , apiSecret  :: String
+    , symbols    :: [String]
+    , year       :: Maybe Integer
+    , outputFile :: Maybe FilePath
     }
     deriving (Show, Read, Eq, Data, Typeable)
 
@@ -113,25 +119,32 @@ getArgs = cmdArgs argSpec
 argSpec :: Args
 argSpec =
     Args
-            { apiKey    = def
-                          &= explicit
-                          &= name "k"
-                          &= name "api-key"
-                          &= help "Binance API Key"
-                          &= typ "KEY"
-            , apiSecret = def
-                          &= explicit
-                          &= name "s"
-                          &= name "api-secret"
-                          &= help "Binance API Secret"
-                          &= typ "SECRET"
-            , year      = Nothing
-                          &= explicit
-                          &= name "y"
-                          &= name "year"
-                          &= help "Limit output to year"
-                          &= typ "YYYY"
-            , symbols   = def &= args &= typ "SYMBOL [SYMBOL ...]"
+            { apiKey     = def
+                           &= explicit
+                           &= name "k"
+                           &= name "api-key"
+                           &= help "Binance API Key"
+                           &= typ "KEY"
+            , apiSecret  = def
+                           &= explicit
+                           &= name "s"
+                           &= name "api-secret"
+                           &= help "Binance API Secret"
+                           &= typ "SECRET"
+            , year       = Nothing
+                           &= explicit
+                           &= name "y"
+                           &= name "year"
+                           &= help "Limit output to year"
+                           &= typ "YYYY"
+            , outputFile =
+                Nothing
+                &= explicit
+                &= name "o"
+                &= name "output-file"
+                &= help "File to write the export to. Default: stdout"
+                &= typ "FILE"
+            , symbols    = def &= args &= typ "SYMBOL [SYMBOL ...]"
             }
         &= summary
                (  "binance-exports v"
