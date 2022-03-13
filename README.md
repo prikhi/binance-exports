@@ -5,6 +5,13 @@
 
 Export Your Binance Trade History to a CSV.
 
+Sometime during February 2022, Binance removed their `Trade History` page,
+along with the ability to export your completed trades. The `Order History`
+export is still available, but the format is more difficult to parse. This
+command is a replacement for the `Trade History` export, generating CSVs with
+an almost-identical format. There are two differences: we split the trade
+symbol into two separate asset columns & include the trade ID.
+
 Requires [`stack`][get-stack] & a Binance.us API key & secret:
 
 ```sh
@@ -17,7 +24,6 @@ TODO:
 * Switch between Binance & Binance US APIs
 * CLI flag for outputting to file
 * Config file & env var overrides for CLI args
-* Improve package documentation
 * Release v1, add package to hackage & stackage
 
 

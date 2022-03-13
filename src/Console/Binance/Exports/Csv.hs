@@ -1,4 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
+{- | Types & CSV serialization for the exports.
+-}
 module Console.Binance.Exports.Csv
     ( TradeExportData(..)
     , buildTradeExport

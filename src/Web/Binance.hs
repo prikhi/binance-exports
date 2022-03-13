@@ -170,6 +170,8 @@ getExchangeInfo symbols = do
         jsonResponse
         ("symbols" =: symbolsParam)
 
+-- | General information about the exchange. Currently we only parse out
+-- the details of requested symbols.
 newtype ExchangeInfo = ExchangeInfo
     { eiSymbols :: [SymbolDetails]
     } deriving (Show, Read, Eq, Ord)
@@ -178,6 +180,8 @@ instance FromJSON ExchangeInfo where
     parseJSON =
         withObject "ExchangeInfo" $ \o -> ExchangeInfo <$> o .: "symbols"
 
+-- | The asset pairs for a trade symbol, along with Binance's precisions
+-- for each asset.
 data SymbolDetails = SymbolDetails
     { sdSymbol              :: T.Text
     , sdBaseAsset           :: T.Text

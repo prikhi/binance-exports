@@ -6,10 +6,21 @@ cabal-version: 1.12
 
 name:           binance-exports
 version:        0.1.0.0
-synopsis:       Short, one-line summary of project here.
-description:    Longer description of package here.
+synopsis:       Export Your Binance Trade History to a CSV.
+description:    Sometime during February 2022, Binance removed their @Trade History@ page,
+                along with the ability to export your completed trades. The @Order History@
+                export is still available, but the format is more difficult to parse.
                 .
-                Maybe include a simple usage example.
+                This package contaings a replacement executable for the @Trade History@
+                export, generating CSVs with an almost-identical format. There are two
+                differences: we split the trade symbol into two separate asset columns &
+                include the trade ID.
+                .
+                @
+                $ binance-exports -k \<API_KEY\> -s \<API_SECRET\> SOLUSD
+                time,base-asset,quote-asset,type,price,quantity,total,fee,fee-currency,trade-id
+                2022-03-01 21:20:44,SOL,USD,BUY,42.2424,0.42,42.90010000,0.0009001,BNB,9001
+                @
 category:       Web
 homepage:       https://github.com/prikhi/binance-exports#readme
 bug-reports:    https://github.com/prikhi/binance-exports/issues

@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE RecordWildCards #-}
 {- | CLI application harness.
-
 -}
 module Console.Binance.Exports.Main
     ( run
