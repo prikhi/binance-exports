@@ -93,7 +93,7 @@ library:
         - req < 4
         - safe-exceptions < 1
         - scientific < 1
-        - text < 2
+        - text < 3
         - time < 2
 
 executables:
