@@ -68,8 +68,10 @@ library:
         - cmdargs >= 0.10 && < 1
         - cryptohash-sha256 < 1
         - http-client < 1
+        - http-types < 1
         - mtl < 3
         - req < 4
+        - safe-exceptions < 1
         - scientific < 1
         - text < 2
         - time < 2

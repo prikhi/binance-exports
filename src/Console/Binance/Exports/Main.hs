@@ -9,7 +9,6 @@ module Console.Binance.Exports.Main
     , Args(..)
     ) where
 
-import           Control.Monad                  ( forM_ )
 import           Control.Monad.IO.Class         ( liftIO )
 import           Data.List                      ( sortOn )
 import           Data.Ord                       ( Down(..) )
@@ -32,6 +31,7 @@ import           System.Console.CmdArgs         ( (&=)
                                                 , summary
                                                 , typ
                                                 )
+import           System.Exit                    ( exitFailure )
 import           System.IO                      ( stderr )
 
 import           Console.Binance.Exports.Csv
@@ -39,7 +39,6 @@ import           Paths_binance_exports          ( version )
 import           Web.Binance
 
 import qualified Data.ByteString.Lazy.Char8    as LBS
-import qualified Data.List                     as L
 import qualified Data.Text                     as T
 import qualified Data.Text.IO                  as T
 
@@ -48,18 +47,10 @@ import qualified Data.Text.IO                  as T
 run :: Args -> IO ()
 run Args {..} = do
     results <- runApi cfg $ do
-        symbolDetails <- eiSymbols <$> getExchangeInfo (map T.pack symbols)
-        -- Log any symbol args not returned by binance.
-        -- TODO: This is pointless as 'getExchangeInfo' throws a 400 status
-        -- HttpException with a response body code field of -1121 when
-        -- asking for invalid symbols.
-        liftIO . forM_ symbols $ \(T.pack -> inputSymbol) -> do
-            case L.find ((== inputSymbol) . sdSymbol) symbolDetails of
-                Nothing ->
-                    T.hPutStrLn stderr
-                        $  "[ERROR] Binance did not recognize symbol: "
-                        <> inputSymbol
-                Just _ -> return ()
+        symbolDetails <-
+            fmap eiSymbols
+            $   getExchangeInfo (map T.pack symbols)
+            >>= handleBinanceError
         rawExportData <- concat <$> mapM getTradesForSymbol symbolDetails
         return . filterYear $ sortOn (Down . tTime . tedTrade) rawExportData
     -- Print CSV to stdout
@@ -71,6 +62,18 @@ run Args {..} = do
     cfg = BinanceConfig { bcApiKey    = T.pack apiKey
                         , bcApiSecret = T.pack apiSecret
                         }
+    -- | If an error is present, print the code & message to stderr, then
+    -- exit with an error status code.
+    handleBinanceError :: Either BinanceError a -> BinanceApiM a
+    handleBinanceError = \case
+        Left e -> liftIO $ do
+            T.hPutStrLn stderr
+                $  "[ERROR] Binance API Error Code "
+                <> T.pack (show $ beCode e)
+                <> ": "
+                <> beMsg e
+            exitFailure
+        Right r -> return r
     -- | Get all trades for the given symbol & convert them into the export
     -- format.
     getTradesForSymbol :: SymbolDetails -> BinanceApiM [TradeExportData]

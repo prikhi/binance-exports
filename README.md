@@ -18,7 +18,6 @@ TODO:
 * CLI flag for outputting to file
 * Config file & env var overrides for CLI args
 * Improve package documentation
-* Better error handling & logging
 * Release v1, add package to hackage & stackage
 
 

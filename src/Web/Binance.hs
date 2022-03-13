@@ -5,10 +5,11 @@
 -}
 module Web.Binance
     (
-    -- * Config
-      BinanceConfig(..)
-    , BinanceApiM
+    -- * API
+      BinanceApiM
     , runApi
+    , BinanceConfig(..)
+    , BinanceError(..)
     -- * Requests
     -- ** Exchange Info
     , getExchangeInfo
@@ -22,7 +23,13 @@ module Web.Binance
     , mkSignature
     ) where
 
-import           Control.Monad.Reader           ( MonadIO
+import           Control.Exception.Safe         ( MonadCatch
+                                                , MonadThrow
+                                                , throw
+                                                , try
+                                                )
+import           Control.Monad.Reader           ( (<=<)
+                                                , MonadIO
                                                 , MonadReader
                                                 , ReaderT
                                                 , ask
@@ -33,6 +40,7 @@ import           Control.Monad.Reader           ( MonadIO
 import           Crypto.Hash.SHA256             ( hmac )
 import           Data.Aeson                     ( (.:)
                                                 , FromJSON(..)
+                                                , eitherDecodeStrict'
                                                 , withObject
                                                 )
 import           Data.Function                  ( on )
@@ -49,18 +57,24 @@ import           Data.Time.Clock.POSIX          ( POSIXTime
 import           Data.Time.Format               ( defaultTimeLocale
                                                 , formatTime
                                                 )
-import           Network.HTTP.Client            ( RequestBody(..)
+import           Network.HTTP.Client            ( HttpException(..)
+                                                , HttpExceptionContent(..)
+                                                , RequestBody(..)
                                                 , queryString
                                                 , requestBody
+                                                , responseStatus
                                                 )
-import           Network.HTTP.Req               ( (/:)
+import           Network.HTTP.Req              as Req
+                                                ( (/:)
                                                 , (=:)
                                                 , AllowsBody
                                                 , GET(..)
                                                 , HttpBody
                                                 , HttpBodyAllowed
+                                                , HttpException(..)
                                                 , HttpMethod
                                                 , HttpResponse
+                                                , JsonResponse
                                                 , MonadHttp(..)
                                                 , NoReqBody(..)
                                                 , Option
@@ -76,6 +90,7 @@ import           Network.HTTP.Req               ( (/:)
                                                 , responseBody
                                                 , runReq
                                                 )
+import           Network.HTTP.Types             ( statusCode )
 import           Text.Bytedump                  ( hexString )
 
 import qualified Data.ByteString               as BS
@@ -93,24 +108,54 @@ data BinanceConfig = BinanceConfig
     }
     deriving (Show, Read, Eq, Ord)
 
+-- | The monad in which Binance API requests are run.
+newtype BinanceApiM a =  BinanceApiM
+    { runBinanceApiM :: ReaderT BinanceConfig Req a
+    } deriving (Functor, Applicative, Monad, MonadIO, MonadReader BinanceConfig, MonadThrow, MonadCatch)
+
 -- | Run a series of API requests with the given Config.
 runApi :: BinanceConfig -> BinanceApiM a -> IO a
 runApi cfg = runReq defaultHttpConfig . flip runReaderT cfg . runBinanceApiM
 
-newtype BinanceApiM a =  BinanceApiM
-    { runBinanceApiM :: ReaderT BinanceConfig Req a
-    } deriving (Functor, Applicative, Monad, MonadIO, MonadReader BinanceConfig)
-
 -- | Use 'MonadHttp' from the 'Req' instance.
 instance  MonadHttp BinanceApiM where
     handleHttpException = BinanceApiM . lift . handleHttpException
+
+-- | Error responses from the API.
+data BinanceError = BinanceError
+    { beCode :: Int
+    , beMsg  :: T.Text
+    }
+    deriving (Show, Read, Eq, Ord)
+
+instance FromJSON BinanceError where
+    parseJSON = withObject "BinanceError"
+        $ \o -> BinanceError <$> o .: "code" <*> o .: "msg"
+
+-- | Decode a 'BinanceError' from a 400-error response, re-throwing all
+-- other exception types.
+catchErrorResponse
+    :: (MonadThrow m, FromJSON a)
+    => Either Req.HttpException (JsonResponse a)
+    -> m (Either BinanceError a)
+catchErrorResponse = \case
+    Right r -> return . Right $ responseBody r
+    Left e@(VanillaHttpException (HttpExceptionRequest _ (StatusCodeException (statusCode . responseStatus -> 400) errBody)))
+        -> either (const $ throw e) (return . Left)
+            $ eitherDecodeStrict' errBody
+    Left e -> throw e
 
 
 -- EXCHANGE INFO
 
 -- | Get Exchange Information for the Given Symbol. Right now, just returns
 -- the requested symbol information.
-getExchangeInfo :: MonadHttp m => [T.Text] -> m ExchangeInfo
+--
+-- Returns Left if a passed symbol is invalid.
+getExchangeInfo
+    :: (MonadHttp m, MonadCatch m)
+    => [T.Text]
+    -> m (Either BinanceError ExchangeInfo)
 getExchangeInfo symbols = do
     let symbolsParam =
             mconcat
@@ -118,12 +163,12 @@ getExchangeInfo symbols = do
                 , T.intercalate "," (map (\s -> "\"" <> s <> "\"") symbols)
                 , "]"
                 ]
-    resp <- req GET
-                (https "api.binance.us" /: "api" /: "v3" /: "exchangeInfo")
-                NoReqBody
-                jsonResponse
-                ("symbols" =: symbolsParam)
-    return $ responseBody resp
+    catchErrorResponse <=< try $ req
+        GET
+        (https "api.binance.us" /: "api" /: "v3" /: "exchangeInfo")
+        NoReqBody
+        jsonResponse
+        ("symbols" =: symbolsParam)
 
 newtype ExchangeInfo = ExchangeInfo
     { eiSymbols :: [SymbolDetails]
