@@ -91,6 +91,7 @@ library:
         - http-client < 1
         - http-types < 1
         - mtl < 3
+        - raw-strings-qq < 2
         - req < 4
         - safe-exceptions < 1
         - scientific < 1

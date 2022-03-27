@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {- | CLI application harness.
 -}
@@ -36,6 +37,7 @@ import           System.Console.CmdArgs         ( (&=)
                                                 , args
                                                 , cmdArgs
                                                 , def
+                                                , details
                                                 , explicit
                                                 , help
                                                 , helpArg
@@ -51,6 +53,7 @@ import           System.Exit                    ( exitFailure )
 import           System.IO                      ( hPutStrLn
                                                 , stderr
                                                 )
+import           Text.RawString.QQ              ( r )
 
 import           Console.Binance.Exports.Csv
 import           Paths_binance_exports          ( version )
@@ -89,7 +92,7 @@ run cfg cfgArgs = do
                 <> T.pack (show $ beCode e)
                 <> ": "
                 <> beMsg e
-        Right r -> return r
+        Right a -> return a
     -- | Get all trades for the given symbol & convert them into the export
     -- format.
     getTradesForSymbol :: SymbolDetails -> BinanceApiM [TradeExportData]
@@ -247,3 +250,67 @@ argSpec =
         &= program "binance-exports"
         &= helpArg [name "h"]
         &= help "Export Binance Trade History to a CSV"
+        &= details programDetails
+
+
+programDetails :: [String]
+programDetails = lines [r|
+binance-exports generates a CSV export of your Binances Trade History. It
+is intended to replace Binance's (removed) Trade History export.
+
+
+DESCRIPTION
+
+By default, we will pull every single trade you have made for the passed
+symbols & print them out in reverse-chronological order with the following
+fields:
+
+   time,base-asset,quote-asset,type,price,quantity,total,fee,fee-currency,trade-id
+
+This closely matches Binance's Trade History export, except we've split the
+`symbol` column into `base-asset` & `quote-asset` columns and include the
+`trade-id`.
+
+
+OUTPUT FILE
+
+You can use the `-o` flag to set the file we will write the CSV data into.
+By default, the export is simply printed to stdout.
+
+Warning: the export file will always be overwritten. We do not support
+appending to an existing file.
+
+
+ENVIRONMENTAL VARIABLES
+
+Instead of passing in your API credentials via the `-k` & `-s` CLI flags,
+you can set the `$BINANCE_API_KEY` & `$BINANCE_API_SECRET` environmental
+variables.
+
+
+CONFIGURATION FILE
+
+You can also set some program options in a YAML file. We attempt to parse
+a configuration file at `$XDG_CONFIG_HOME/binance-exports.yaml`. It
+supports the following top-level keys:
+
+    - `api-key`:        (string) Your Binance API key
+    - `api-secret`:     (string) Your Binance API secret
+    - `symbols`:        (list of strings) The trade symbols to fetch
+
+Environmental variables will override any configuration options, and CLI
+flags will override both environmental variables & configuration file
+options.
+
+
+USAGE EXAMPLES
+
+Fetch all my BNB trades:
+    binance-exports BNBUSD
+
+Fetch my BTC trades from 2020:
+    binance-exports -y 2020 BTCUSD
+
+Fetch my BNB & BTC trades from 2022, write them to a file:
+    binance-exports -y 2022 -o 2022-binance-trades.csv BNBUSD BTCUSD
+|]
