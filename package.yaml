@@ -84,6 +84,7 @@ library:
         - aeson < 3
         - bytedump < 2
         - bytestring < 1
+        - directory < 2
         - cassava < 1
         - cmdargs >= 0.10 && < 1
         - cryptohash-sha256 < 1
@@ -95,6 +96,8 @@ library:
         - scientific < 1
         - text < 3
         - time < 2
+        - xdg-basedir < 1
+        - yaml < 1
 
 executables:
     binance-exports:

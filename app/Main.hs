@@ -4,4 +4,7 @@ import           Console.Binance.Exports.Main
 
 
 main :: IO ()
-main = getArgs >>= run
+main = do
+    args <- getArgs
+    cfg  <- loadConfigFile
+    run cfg args

@@ -22,7 +22,6 @@ stack run -- --help
 TODO:
 
 * Switch between Binance & Binance US APIs
-* Config file & env var overrides for CLI args
 
 
 [get-stack]: https://docs.haskellstack.org/en/stable/README/
