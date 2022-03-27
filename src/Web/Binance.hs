@@ -317,8 +317,16 @@ runSignedRequest m u b p s = do
         RequestBodyBS  bs  -> bs
         _                  -> ""
 
--- | Generate a HMAC SHA256 signature for a SIGNED api request.
-mkSignature :: BinanceConfig -> BS.ByteString -> BS.ByteString -> BS.ByteString
+-- | Generate a HMAC "Crpto.Hash.SHA256" signature for a @SIGNED@ api
+-- request.
+mkSignature
+    :: BinanceConfig
+    -- ^ API Credentials
+    -> BS.ByteString
+    -- ^ Query paramters (no leading @?@)
+    -> BS.ByteString
+    -- ^ Request body
+    -> BS.ByteString
 mkSignature cfg queryParams reqBody =
     let totalParams = queryParams <> reqBody
         key         = encodeUtf8 $ bcApiSecret cfg
