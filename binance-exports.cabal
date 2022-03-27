@@ -131,6 +131,6 @@ test-suite binance-exports-test
     , binance-exports
     , hedgehog
     , tasty
-    , tasty-hedgehog
+    , tasty-hedgehog >=1.2
     , tasty-hunit
   default-language: Haskell2010

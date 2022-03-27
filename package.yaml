@@ -126,5 +126,5 @@ tests:
             - binance-exports
             - hedgehog
             - tasty
-            - tasty-hedgehog
+            - tasty-hedgehog >= 1.2
             - tasty-hunit

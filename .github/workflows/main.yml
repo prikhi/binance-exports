@@ -36,7 +36,7 @@ jobs:
         with:
           enable-stack: true
           stack-no-global: true
-      - run: stack test --fast --haddock --pedantic --resolver lts-18
+      - run: stack test --fast --haddock --pedantic --resolver lts-19
 
   # Stackage Nightly - Failures Allowed
   build-nightly:
