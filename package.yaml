@@ -26,7 +26,7 @@ extra-source-files:
 
 
 synopsis:
-    Generate CSV Exports to your Binance Trade History.
+    Generate CSV Exports of your Binance Trade History.
 
 description: |
     @binance-exports@ is a CLI program that queries the Binance.us API for your
