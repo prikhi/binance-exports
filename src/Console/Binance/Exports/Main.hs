@@ -12,6 +12,7 @@ module Console.Binance.Exports.Main
 
 import           Control.Applicative            ( (<|>) )
 import           Control.Exception.Safe         ( try )
+import           Control.Monad                  ( (<=<) )
 import           Control.Monad.IO.Class         ( liftIO )
 import           Data.Aeson                     ( (.:)
                                                 , FromJSON(..)
@@ -55,7 +56,6 @@ import           Console.Binance.Exports.Csv
 import           Paths_binance_exports          ( version )
 import           Web.Binance
 
-import           Control.Monad                  ( (<=<) )
 import qualified Data.ByteString.Lazy.Char8    as LBS
 import qualified Data.Text                     as T
 import qualified Data.Text.IO                  as T
