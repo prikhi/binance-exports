@@ -174,8 +174,8 @@ instance FromJSON ConfigFile where
         return ConfigFile { .. }
 
 -- | Attempt to read a 'ConfigFile' from
--- @$XDG_CONFIG_HOME/binance-exports/config.yaml@. Print any parsing errors
--- to 'stderr'.
+-- @$XDG_CONFIG_HOME\/binance-exports\/config.yaml@. Print any parsing
+-- errors to 'stderr'.
 loadConfigFile :: IO ConfigFile
 loadConfigFile = do
     configPath   <- getUserConfigFile "binance-exports" "config.yaml"

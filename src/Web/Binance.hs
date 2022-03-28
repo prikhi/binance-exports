@@ -285,8 +285,8 @@ instance FromJSON Trade where
 
 -- UTILS
 
--- | Run a request for a SIGNED endpoint by inserting the signature before
--- making the request.
+-- | Run a request for a @SIGNED@ endpoint by inserting the signature into
+-- the query string before making the request.
 runSignedRequest
     :: ( MonadHttp m
        , HttpMethod method
@@ -323,7 +323,7 @@ mkSignature
     :: BinanceConfig
     -- ^ API Credentials
     -> BS.ByteString
-    -- ^ Query paramters (no leading @?@)
+    -- ^ Query parameters (with no leading @?@)
     -> BS.ByteString
     -- ^ Request body
     -> BS.ByteString
