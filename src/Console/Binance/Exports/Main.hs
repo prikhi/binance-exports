@@ -15,7 +15,7 @@ import           Control.Applicative            ( (<|>) )
 import           Control.Exception.Safe         ( try )
 import           Control.Monad                  ( (<=<) )
 import           Control.Monad.IO.Class         ( liftIO )
-import           Data.Aeson                     ( (.:)
+import           Data.Aeson                     ( (.:?)
                                                 , FromJSON(..)
                                                 , withObject
                                                 )
@@ -168,9 +168,9 @@ data ConfigFile = ConfigFile
 
 instance FromJSON ConfigFile where
     parseJSON = withObject "ConfigFile" $ \o -> do
-        cfgApiKey    <- o .: "api-key"
-        cfgApiSecret <- o .: "api-secret"
-        cfgSymbols   <- o .: "symbols"
+        cfgApiKey    <- o .:? "api-key"
+        cfgApiSecret <- o .:? "api-secret"
+        cfgSymbols   <- o .:? "symbols"
         return ConfigFile { .. }
 
 -- | Attempt to read a 'ConfigFile' from
@@ -291,7 +291,7 @@ variables.
 CONFIGURATION FILE
 
 You can also set some program options in a YAML file. We attempt to parse
-a configuration file at `$XDG_CONFIG_HOME/binance-exports.yaml`. It
+a configuration file at `$XDG_CONFIG_HOME/binance-exports/config.yaml`. It
 supports the following top-level keys:
 
     - `api-key`:        (string) Your Binance API key

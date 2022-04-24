@@ -3,6 +3,10 @@
 
 ## master
 
+* Fix a bug causing all options in config files to be
+  required. They are all now optional as originally
+  intended.
+
 
 ## v0.1.1.0
 
