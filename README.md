@@ -22,6 +22,7 @@ stack run -- --help
 TODO:
 
 * Switch between Binance & Binance US APIs
+* Include Fiat/Crypto Deposits & Withdrawals
 
 
 [get-stack]: https://docs.haskellstack.org/en/stable/README/
