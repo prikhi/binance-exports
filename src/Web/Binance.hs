@@ -28,8 +28,8 @@ import           Control.Exception.Safe         ( MonadCatch
                                                 , throw
                                                 , try
                                                 )
-import           Control.Monad.Reader           ( (<=<)
-                                                , MonadIO
+import           Control.Monad                  ( (<=<) )
+import           Control.Monad.Reader           ( MonadIO
                                                 , MonadReader
                                                 , ReaderT
                                                 , ask
