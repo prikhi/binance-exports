@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
 name:           binance-exports
-version:        0.1.1.0
+version:        0.1.2.0
 synopsis:       Generate CSV Exports of your Binance Trade History.
 description:    @binance-exports@ is a CLI program that queries the Binance.us API for your
                 Trade History & exports all trades to a CSV file.
