@@ -32,11 +32,11 @@ jobs:
             stack-build-lts-${{ github.ref }}-
             stack-build-lts-
             stack-build-
-      - uses: haskell/actions/setup@v1
+      - uses: haskell-actions/setup@v2
         with:
           enable-stack: true
           stack-no-global: true
-      - run: stack test --fast --haddock --pedantic --resolver lts-19
+      - run: stack test --fast --haddock --pedantic --resolver lts-23
 
   # Stackage Nightly - Failures Allowed
   build-nightly:
@@ -60,7 +60,7 @@ jobs:
             stack-build-nightly-${{ steps.date.outputs.year }}-${{ steps.date.outputs.month }}-
             stack-build-nightly-${{ steps.date.outputs.year }}-
             stack-build-nightly-
-      - uses: haskell/actions/setup@v1
+      - uses: haskell-actions/setup@v2
         with:
           enable-stack: true
           stack-no-global: true
@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ghc: ['8.8', '8.10', '9.0']
+        ghc: ['9.4', '9.6', '9.8']
     steps:
       - uses: actions/checkout@v2
       - name: Cache Cabal Artifacts
@@ -88,7 +88,7 @@ jobs:
             cabal-build-${{ matrix.ghc }}-${{ github.ref }}-
             cabal-build-${{ matrix.ghc }}-
             cabal-build-
-      - uses: haskell/actions/setup@v1
+      - uses: haskell-actions/setup@v2
         with:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: latest
